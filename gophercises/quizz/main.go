@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	// "io"
 	"math/rand"
 	"time"
 )
@@ -16,9 +15,6 @@ func main() {
 	csvFilename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
 	shuffleFlag := flag.Bool("shuffle", false, "put this flag if you want to shuffle the questions")
 	flag.Parse()
-	// if len(os.Args) < 2 {
-	// 	exit(fmt.Sprintf("one argument at least is needed, type --help flag to get more info"))
-	// }
 
 	//File Opening
 	csvfile, err := os.Open(*csvFilename)
@@ -37,7 +33,7 @@ func main() {
 		rand.Shuffle(len(problems), func(i, j int) { problems[i], problems[j] = problems[j], problems[i] })
 	}
 
-	//questions and answers
+	//questions and answers from the problems slice
 	var rights int
 	questionAndAnswers(problems, &rights)
 	fmt.Printf("TOTAL IS \n%v / %v GOOD ANSWERS", rights, len(problems))
