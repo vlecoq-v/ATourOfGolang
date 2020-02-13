@@ -4,64 +4,76 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"io"
 	"os"
-	"strconv"
+	"strings"
+	// "io"
+	"math/rand"
 	"time"
 )
 
 func main() {
-	//Binary info
-	csvFilename := flag.String("csv", "problens.csv", "a csv file in the format of 'question,answer'")
+	//Binary argument and info
+	csvFilename := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
+	shuffleFlag := flag.Bool("shuffle", false, "put this flag if you want to shuffle the questions")
 	flag.Parse()
-	_ = csvFilename
+	// if len(os.Args) < 2 {
+	// 	exit(fmt.Sprintf("one argument at least is needed, type --help flag to get more info"))
+	// }
 
 	//File Opening
-	csvArg := os.Args[1]
-	csvfile, err := os.Open(csvArg)
+	csvfile, err := os.Open(*csvFilename)
 	if err != nil {
-		fmt.Printf("there was an error opening the file %v", err)
-		return
+		exit(fmt.Sprintf("there was an error opening the file %v", err))
 	}
 	r := csv.NewReader(csvfile)
 
 	//Funky intro
 	introduction()
 
+	// read the file and return a slice of problem struct
+	problems := csvParser(r)
+	if *shuffleFlag {
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(problems), func(i, j int) { problems[i], problems[j] = problems[j], problems[i] })
+	}
+
 	//questions and answers
-	var rights, wrongs int
-	csvParser(r, &rights, &wrongs)
-	fmt.Printf("TOTAL IS \n%v / %v GOOD ANSWERS", rights, wrongs)
+	var rights int
+	questionAndAnswers(problems, &rights)
+	fmt.Printf("TOTAL IS \n%v / %v GOOD ANSWERS", rights, len(problems))
 }
 
-func csvParser(r *csv.Reader, rights *int, wrongs *int) {
-	for {
-		record, err := r.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			fmt.Printf("reading error %v", err)
+func csvParser(r *csv.Reader) []problem {
+		lines, err := r.ReadAll()
+		if err != nil {
+			exit(fmt.Sprintf("reading error %v", err))
 		}
-		fmt.Printf("%v ", record[0])
-		a, err := strconv.Atoi(record[1])
-		if questionAndAnswer(a) == 1 {
+		ret := make([]problem, len(lines))
+		for i, line := range lines {
+			ret[i] = problem {
+				q: line[0],
+				a: strings.TrimSpace(line[1]),
+			}
+		}
+		return ret
+}
+
+type problem struct {
+	q string
+	a string
+}
+
+func questionAndAnswers(problems []problem, rights *int) {
+	for i, problem := range problems {
+		fmt.Printf("%d %v = ", i + 1, problem.q)
+		var userAnswer string
+		fmt.Scanf("%s", &userAnswer)
+		if userAnswer == problem.a {
 			*rights++
-		} else {
-			*wrongs++
+		} 
 		}
-	}
 }
 
-func questionAndAnswer(expected int) int {
-	var e int
-	fmt.Scanf("%d", &e)
-	if e == expected {
-		return 1
-	} else {
-		// fmt.Printf("received %v -- expected %v\n", e, expected)
-		return 0
-	}
-}
 
 func introduction() {
 	fmt.Println("This is a math test quizz")
@@ -73,4 +85,9 @@ func introduction() {
 		time.Sleep(1 * time.Second / 2)
 	}
 	fmt.Println("GO")
+}
+
+func exit(msg string) {
+	fmt.Println(msg)
+	os.Exit(1)
 }
